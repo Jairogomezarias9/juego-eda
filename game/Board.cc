@@ -206,7 +206,7 @@ void Board::print_results () const {
   }
 
   cerr << "info: player(s)";
-  for (int pl : v) //cerr << " " << name(pl);
+  for (int pl : v) cerr << " " << name(pl);
   cerr << " got top score" << endl;
 }
 

@@ -5,7 +5,7 @@
  * Write the name of your player and save this file
  * with the same name and .cc extension.
  */
-#define PLAYER_NAME Jairo
+#define PLAYER_NAME Jairo3
 
 struct PLAYER_NAME : public Player
 {
@@ -35,7 +35,7 @@ struct PLAYER_NAME : public Player
       return false;
     }
     Unit u = unit(id);
-    return (u.player = !me() && u.type == Wizard && u.is_in_conversion_process());
+    return (u.player = !me() and u.type == Wizard and u.is_in_conversion_process());
   }
   bool es_fantasma_enemigo(Pos p)
   {
@@ -55,7 +55,7 @@ struct PLAYER_NAME : public Player
       return false;
     }
     Unit u = unit(id);
-    return (u.player != me() and u.type == Wizard && !u.is_in_conversion_process());
+    return (u.player != me() and u.type == Wizard and !u.is_in_conversion_process());
   }
 
   bool es_libro(Pos p)
@@ -78,111 +78,117 @@ struct PLAYER_NAME : public Player
     return cell(p).owner == me();
   }
 
- bool esta_en_campo_letal(Pos p)
-{
-    Pos pos_v = pos_voldemort(); // Obtiene la posición del personaje especial
+  bool voldemort_cerca(Pos p)
+  {
+    Pos posicionvol = pos_voldemort(); // posicion de voldemort
 
-    int di = abs(p.i - pos_v.i);
-    int dj = abs(p.j - pos_v.j);
+    int distanciai = abs(p.i - posicionvol.i);
+    int distanciaj = abs(p.j - posicionvol.j);
 
-    int distancia_chebyshev = std::max(di, dj);
+    int distance = max(distanciai, distanciaj);
 
-    // Si la distancia de Chebyshev es exactamente 2, la posición está en el campo letal
-    return distancia_chebyshev == 2;
-}
+    // Si la distancia  es 2, la posición está en el campo letal
+    return distance == 2;
+  }
 
   pair<Pos, int> Bfs(Pos pos, function<bool(Pos)> is_target)
   {
     vector<vector<bool>> visited(board_rows(), vector<bool>(board_cols(), false)); // matriz de casillas visitadas
     vector<vector<Pos>> parent(board_rows(), vector<Pos>(board_cols(), {-1, -1})); // matriz para rastrear el camino
-                                                                                   // cola para BFS
-    queue<pair<Pos, int>> q;                                                       // Cola para BFS, almacenando la posición y la distanciaancia
-    q.push({pos, 0});                                                              // empiezo en la posición inicial
+    queue<pair<Pos, int>> q; // Cola para BFS, almacenando la posición y la distancia
+    q.push({pos, 0});  // empiezo en la posición inicial
     visited[pos.i][pos.j] = true;
 
     while (!q.empty())
     {
+      // bfs
       auto [actual, distancia] = q.front();
       q.pop();
+
+      // si encuentro un objetivo
       if (is_target(actual))
       {
         // Reconstruir el camino hacia el objetivo
         Pos next_pos = actual;
-        while (parent[next_pos.i][next_pos.j] != pos && parent[next_pos.i][next_pos.j].i != -1)
+        while (parent[next_pos.i][next_pos.j] != pos)
         {
           next_pos = parent[next_pos.i][next_pos.j];
         }
         return {next_pos, distancia};
       }
-      // Explorar las cuatro direcciones
+
+      // Explorar las cuatro direcciones a las que se puede mover un mago
       for (int i = 0; i < 4; ++i)
       {
         Pos new_pos = actual + direccions[i];
-
-        if (pos_ok(new_pos.i, new_pos.j) && !visited[new_pos.i][new_pos.j])
+        // si la posicion es válida y aun no ha sido visitada
+        if (pos_ok(new_pos.i, new_pos.j) and !visited[new_pos.i][new_pos.j])
         {
-          visited[new_pos.i][new_pos.j] = true;
-          if (cell(new_pos).type != Wall && !esta_en_campo_letal(new_pos))
+
+          visited[new_pos.i][new_pos.j] = true; // la asigno a posiciones visitadas
+          // si no es una pared y no estoy en la zona de peligro de voldemort
+          if (cell(new_pos).type != Wall and !voldemort_cerca(new_pos))
           {
-            if(!esta_en_campo_letal(new_pos)){
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
-            }
-           else if (es_libro(new_pos))
+            if (!voldemort_cerca(new_pos))
             {
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
+            }
+            else if (es_libro(new_pos))
+            {
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
             }
 
             else if (es_mago_enemigo(new_pos))
             {
 
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
             }
             else if (es_fantasma_enemigo(new_pos))
             {
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
             }
 
             else if (no_es_mio(new_pos))
             {
               if (!es_fantasma_enemigo(new_pos))
               {
-                visited[new_pos.i][new_pos.j] = true;
-                parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-                q.push({new_pos, distancia + 1});
+                visited[new_pos.i][new_pos.j] = true;  // visitada
+                parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+                q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
               }
               if (!es_mago_enemigo(new_pos))
               {
-                visited[new_pos.i][new_pos.j] = true;
-                parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-                q.push({new_pos, distancia + 1});
+                visited[new_pos.i][new_pos.j] = true;  // visitada
+                parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+                q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
               }
             }
 
             else if (is_empty(new_pos))
             {
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
             }
             else if (es_mio(new_pos))
             {
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              q.push({new_pos, distancia + 1});
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push({new_pos, distancia + 1});      // añado la posicion a la cola con 1 distáncia más
             }
           }
         }
       }
     }
-    // Si no se encontró un objetivo, retornar una posición inválida y prioridad -1
+    // Si no encuentro nada, retorno -1 para hacer un random luego
     return {{-1, -1}, -1};
   }
 
@@ -208,37 +214,40 @@ struct PLAYER_NAME : public Player
         break;
       }
 
-      // Explorar las cuatro direcciones
+      // Explorar las ocho direcciones
       for (int i = 0; i < 8; ++i)
       {
         Pos new_pos = actual + direccionsfantasma[i];
 
-        if (pos_ok(new_pos.i, new_pos.j) && !visited[new_pos.i][new_pos.j])
+        if (pos_ok(new_pos.i, new_pos.j) and !visited[new_pos.i][new_pos.j])
         {
           visited[new_pos.i][new_pos.j] = true;
 
-          if (cell(new_pos).type != Wall && !esta_en_campo_letal(new_pos))
+          if (cell(new_pos).type != Wall and !voldemort_cerca(new_pos))
           {
-            if(!esta_en_campo_letal(new_pos)){
-              visited[new_pos.i][new_pos.j] = true;
-              parent[new_pos.i][new_pos.j] = actual; // Guardar el padre para reconstruir el camino
-              
+            if (!voldemort_cerca(new_pos))
+            {
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
+              q.push(new_pos);
             }
             if (es_libro(new_pos))
             {
-              parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
               q.push(new_pos);
             }
 
             else if (!es_mago_enemigo(new_pos))
             {
-
-              parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
               q.push(new_pos);
             }
             else if (!es_fantasma_enemigo(new_pos))
             {
-              parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
               q.push(new_pos);
             }
 
@@ -246,24 +255,28 @@ struct PLAYER_NAME : public Player
             {
               if (!es_fantasma_enemigo(new_pos))
               {
-                parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+                visited[new_pos.i][new_pos.j] = true;  // visitada
+                parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
                 q.push(new_pos);
               }
               if (!es_mago_enemigo(new_pos))
               {
-                parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+                visited[new_pos.i][new_pos.j] = true;  // visitada
+                parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
                 q.push(new_pos);
               }
             }
 
             else if (is_empty(new_pos))
             {
-              parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
               q.push(new_pos);
             }
             else if (es_mio(new_pos))
             {
-              parent[new_pos.i][new_pos.j] = actual; // guardar el padre para reconstruir el camino
+              visited[new_pos.i][new_pos.j] = true;  // visitada
+              parent[new_pos.i][new_pos.j] = actual; // Guardar para reconstruir el camino
               q.push(new_pos);
             }
           }
@@ -272,13 +285,13 @@ struct PLAYER_NAME : public Player
     }
     // Reconstruir el camino desde el objetivo hasta la posición inicial
     vector<Pos> path;
-    if (target.i != -1 && target.j != -1)
+    if (target.i != -1 and target.j != -1)
     {
-        for (Pos at = target; at.i != -1 && at.j != -1; at = parent[at.i][at.j])
-        {
-            path.push_back(at);
-        }
-        reverse(path.begin(), path.end()); // invertir el camino para que vaya desde la posición inicial hasta el objetivo
+      for (Pos at = target; at.i != -1 and at.j != -1; at = parent[at.i][at.j])
+      {
+        path.push_back(at);
+      }
+      reverse(path.begin(), path.end()); // invertir el camino para que vaya desde la posición inicial hasta el objetivo
     }
 
     return path; // devolver el camino
@@ -288,161 +301,163 @@ struct PLAYER_NAME : public Player
   {
     vector<Pos> path;
 
-    if (cell(pos).id != -1 && (unit(cell(pos).id).type) == Wizard)
+    if (cell(pos).id != -1 and (unit(cell(pos).id).type) == Wizard)
     {
-      auto [next_pos_book, dist_book] = Bfs(pos, std::function<bool(Pos)>([this](Pos p)
-                                                                          { return es_libro(p); }));
-      auto [next_pos_wizard, dist_wizard] = Bfs(pos, std::function<bool(Pos)>([this](Pos p)
-                                                                              { return es_mago_enemigo(p); }));
-      auto [next_pos_ghost, dist_ghost] = Bfs(pos, std::function<bool(Pos)>([this](Pos p)
-                                                                            { return es_fantasma_enemigo(p); }));
+      //llamo a 3 Bfs para las prioridades
+      auto [next_pos_book, dist_book] = Bfs(pos, [this](Pos p) { return es_libro(p); });
+      auto [next_pos_wizard, dist_wizard] = Bfs(pos, [this](Pos p) { return es_mago_enemigo(p); });
+      auto [next_pos_ghost, dist_ghost] = Bfs(pos, [this](Pos p) { return es_fantasma_enemigo(p); });
 
       // Comparar distancias y elegir el objetivo más cercano
       int min_distance = INT_MAX;
       Pos next_pos = pos;
 
-      if (dist_book != -1 && dist_book < min_distance)
+      if (dist_book != -1 and dist_book < min_distance)
       {
         min_distance = dist_book;
         next_pos = next_pos_book;
       }
-      if (dist_wizard != -1 && dist_wizard < min_distance)
+      if (dist_wizard != -1 and dist_wizard < min_distance)
       {
         min_distance = dist_wizard;
         next_pos = next_pos_wizard;
       }
-      if (dist_ghost != -1 && dist_ghost < min_distance)
+      if (dist_ghost != -1 and dist_ghost < min_distance)
       {
         min_distance = dist_ghost;
         next_pos = next_pos_ghost;
       }
 
-      // Si se encontró un objetivo
-      if (min_distance != INT_MAX && !esta_en_campo_letal(next_pos))
+      // Si se encontró un objetivo y no estoy cerca de voldemort
+      if (min_distance != INT_MAX and !voldemort_cerca(next_pos))
       {
-        if (next_pos.i == pos.i - 1 && next_pos.j == pos.j)
+        if (next_pos.i == pos.i - 1 and next_pos.j == pos.j)
           return Up;
-        else if (next_pos.i == pos.i + 1 && next_pos.j == pos.j)
+        else if (next_pos.i == pos.i + 1 and next_pos.j == pos.j)
           return Down;
-        else if (next_pos.i == pos.i && next_pos.j == pos.j - 1)
+        else if (next_pos.i == pos.i and next_pos.j == pos.j - 1)
           return Left;
-        else if (next_pos.i == pos.i && next_pos.j == pos.j + 1)
+        else if (next_pos.i == pos.i and next_pos.j == pos.j + 1)
           return Right;
       }
-      else if(esta_en_campo_letal(next_pos)){
+      else if (voldemort_cerca(next_pos))
+      {
         // Si no se ha encontrado una dirección, retornar una dirección aleatoria que sea segura
-       for (int i = 0; i < 4; ++i)
-       {
-        Pos adj_pos =pos+direccions[i];
-        if (pos_ok(adj_pos) && !esta_en_campo_letal(adj_pos) && cell(adj_pos).type != Wall)
+        for (int i = 0; i < 4; ++i)
+        {
+          Pos adj_pos = pos + direccions[i];
+          if (pos_ok(adj_pos) and !voldemort_cerca(adj_pos) and cell(adj_pos).type != Wall)
             return direccions[i];
-         }
-
+        }
       }
     }
 
-    else if (cell(pos).id != -1 && (unit(cell(pos).id).type) == Ghost)
+    else if (cell(pos).id != -1 and (unit(cell(pos).id).type) == Ghost)
     {
       vector<Pos> path = Bfsfantasma(pos);
-      if (path.size() > 0 &&  !esta_en_campo_letal(path[1]))
+      if (path.size() > 0 and !voldemort_cerca(path[1]))
       {
 
         Pos nextPos = path[1]; // la siguiente posición en el camino
-        if (nextPos.i == pos.i - 1 && nextPos.j == pos.j)
+        if (nextPos.i == pos.i - 1 and nextPos.j == pos.j)
           return Up;
-        else if (nextPos.i == pos.i + 1 && nextPos.j == pos.j)
+        else if (nextPos.i == pos.i + 1 and nextPos.j == pos.j)
           return Down;
-        else if (nextPos.i == pos.i && nextPos.j == pos.j - 1)
+        else if (nextPos.i == pos.i and nextPos.j == pos.j - 1)
           return Left;
-        else if (nextPos.i == pos.i && nextPos.j == pos.j + 1)
+        else if (nextPos.i == pos.i and nextPos.j == pos.j + 1)
           return Right;
-        else if (nextPos.i == pos.i - 1 && nextPos.j == pos.j - 1)
+        else if (nextPos.i == pos.i - 1 and nextPos.j == pos.j - 1)
           return UL;
-        else if (nextPos.i == pos.i - 1 && nextPos.j == pos.j + 1)
+        else if (nextPos.i == pos.i - 1 and nextPos.j == pos.j + 1)
           return RU;
-        else if (nextPos.i == pos.i + 1 && nextPos.j == pos.j - 1)
+        else if (nextPos.i == pos.i + 1 and nextPos.j == pos.j - 1)
           return LD;
-        else if (nextPos.i == pos.i + 1 && nextPos.j == pos.j + 1)
+        else if (nextPos.i == pos.i + 1 and nextPos.j == pos.j + 1)
           return DR;
       }
-      else if(path.size()>0 and esta_en_campo_letal(path[1])){
+      else if (path.size() > 0 and voldemort_cerca(path[1]))
+      {
         // Si no se ha encontrado una dirección, retornar una dirección aleatoria que sea segura
-       for (int i = 0; i < 8; ++i)
-       {
-        Pos adj_pos =pos+direccionsfantasma[i];
-        if (pos_ok(adj_pos) && !esta_en_campo_letal(adj_pos) && cell(adj_pos).type != Wall)
+        for (int i = 0; i < 8; ++i)
+        {
+          Pos adj_pos = pos + direccionsfantasma[i];
+          if (pos_ok(adj_pos) and !voldemort_cerca(adj_pos) and cell(adj_pos).type != Wall)
             return direccionsfantasma[i];
-         }
-
+        }
       }
-      else{
+      else
+      {
         int random_dir = random(0, 7);
         return direccionsfantasma[random_dir];
       }
     }
     int random_dir = random(0, 3);
     return direccions[random_dir];
-
   }
-  // Función recursiva para resolver el problema con backtracking optimizado
-bool backtrack(vector<int>& assignments, vector<int>& groupSums, const vector<int>& ingredients, int index, int targetSum) {
-    if (index == ingredients.size()) {
-        // Verificar si todos los grupos tienen la suma correcta
-        for (int sum : groupSums) {
-            if (sum != targetSum) {
-                return false;
-            }
+
+  bool backtrack(vector<int> &assignments, vector<int> &groupSums, const vector<int> &ingredients, int index, int targetSum)
+  {
+    if (index == ingredients.size())
+    {
+      // Verificar si todos los grupos tienen la suma correcta
+      for (int i = 0; i < groupSums.size(); ++i)
+      {
+        if (groupSums[i] != targetSum)
+        {
+          return false;
         }
-        return true;
+      }
+      return true;
     }
 
     // Intentar añadir el elemento actual a cada grupo
-    for (int i = 0; i < groupSums.size(); ++i) {
-        if (groupSums[i] + ingredients[index] <= targetSum) {
-            // Asignar al grupo `i`
-            groupSums[i] += ingredients[index];
-            assignments[index] = i;
+    for (int i = 0; i < groupSums.size(); ++i)
+    {
+      if (groupSums[i] + ingredients[index] <= targetSum)
+      {
+        // Asignar al grupo `i`
+        groupSums[i] += ingredients[index];
+        assignments[index] = i;
 
-            if (backtrack(assignments, groupSums, ingredients, index + 1, targetSum)) {
-                return true;
-            }
-
-            // Backtracking: deshacer la asignación
-            groupSums[i] -= ingredients[index];
-            assignments[index] = -1;
+        if (backtrack(assignments, groupSums, ingredients, index + 1, targetSum))
+        {
+          return true;
         }
 
-        // Optimización: si el grupo está vacío, no probar con grupos futuros
-        if (groupSums[i] == 0) {
-            break;
-        }
+        // deshacer
+        groupSums[i] -= ingredients[index];
+        assignments[index] = -1;
+      }
+
+      //si el grupo está vacío, no probar con grupos futuros
+      if (groupSums[i] == 0)
+      {
+        break;
+      }
     }
 
     return false;
-}
+  }
 
-// Función principal para agrupar los ingredientes
-vector<int> groupIngredients(const vector<int>& ingredients) {
-    
-
-    int totalSum = accumulate(ingredients.begin(), ingredients.end(), 0);
-
-    // Cada grupo debe sumar lo mismo, y cada grupo tiene exactamente 3 elementos
-    int numGroups = 5; // 5 grupos
+  // Función principal para agrupar los ingredientes
+  vector<int> groupIngredients(const vector<int> &ingredients)
+  {
+    int totalSum;
+    for(int i =0;i<ingredients.size();++i){
+      totalSum+=ingredients[i];
+    }
+    int numGroups = 5;
     int targetSum = totalSum / numGroups;
-
-   
 
     // Inicializar estructuras de datos
     vector<int> assignments(ingredients.size(), -1); // Asignación de grupos
-    vector<int> groupSums(numGroups, 0);            // Sumas actuales de los grupos
+    vector<int> groupSums(numGroups, 0);             // Sumas actuales de los grupos
 
     // Resolver con backtracking
-     backtrack(assignments, groupSums, ingredients, 0, targetSum);
-      return assignments;
-}
-
-  
+    backtrack(assignments, groupSums, ingredients, 0, targetSum);
+    return assignments;
+  }
 
   /**
    * Play method, invoked once per each round.
@@ -467,11 +482,13 @@ vector<int> groupIngredients(const vector<int>& ingredients) {
     }
 
     // movimiento fantasma
-    int idfantasma = ghost(me());              // id del fantasma
-    Pos posfantasma = unit(idfantasma).pos;    // posicion del fantasma
-    spell(idfantasma,groupIngredients(spell_ingredients()));
+    int idfantasma = ghost(me());           // id del fantasma
+    Pos posfantasma = unit(idfantasma).pos; // posicion del fantasma
+    if (round() > 50 and unit(idfantasma).resting_rounds() == 0 and round()<160)
+    {
+      spell(idfantasma, groupIngredients(spell_ingredients()));
+    }
     move(idfantasma, movimiento(posfantasma)); // muevo el fantasma
-   
   }
 };
 

@@ -32,7 +32,7 @@ PLAYERS_OBJ = $(patsubst %.cc, %.o, $(PLAYERS_SRC)) $(EXTRA_OBJ) $(DUMMY_OBJ)
 
 # Rules
 
-OBJ = Structs.o Settings.o State.o Info.o Random.o Board.o Action.o Player.o Registry.o Utils.o AIKonka32.o AIEnzo.o AIGuillem.o AIKonka666.o
+OBJ = Structs.o Settings.o State.o Info.o Random.o Board.o Action.o Player.o Registry.o Utils.o AIKonka32.o AIEnzo.o AIGuillem.o AIKonka666.o AIEnzo3.o AIIgnaGir2.o AIKonkax.o AIMC.o AIIgnaGir3.o
 
 all: Game
 

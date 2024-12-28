@@ -1,0 +1,5 @@
+info: seed 5
+info: loading game
+info: loaded game
+info: loading player Ignagir3
+Game: Registry.cc:21: static Player* Registry::new_player(std::string): Assertion `it != reg_->end()' failed.
